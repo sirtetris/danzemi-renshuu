@@ -13,7 +13,7 @@
 * `git pull` (リポジトリからプロジェクトの最新のバージョンをゲットする)
 * ファイルを変更する
 * `git add ◯◯` (変更があるファイルを選ぶ。例えば：`git add renshuu.txt hoka.jpg test.lua`)
-* `git commit -m "◯◯"` (変更を保存して、その説明を書く。例えば：`git commit -m "renshuu.txtに"`)
+* `git commit -m "◯◯"` (変更を保存して、その説明を書く。例えば：`git commit -m "test.luaの機能を増やした"`)
 * `git push` (リポジトリに送る)
 
 ## 解けない問題がある、助けて！
