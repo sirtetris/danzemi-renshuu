@@ -1,4 +1,9 @@
 ﻿このファイルに何かを追加してみて ^_^
 lalala
 Usyu
+<<<<<<< HEAD
 777
+=======
+KawakamiGorira
+>>>>>>> 073d6e243b3d92893e3a37fb729eefa51d33577c
+ddd
