@@ -1,11 +1,26 @@
 # Git
-簡単なワークフロー：
 
+## したことがない人がしてほしい
+
+* gitプロンプト（黒いコマンドプロンプト）をデスクトップから実効する
+* `git config --global user.name "◯◯"` (◯◯の代わりに自分の名前かニックネームを書いてください)
+* `git config --global user.email "◯◯"` (◯◯の代わりに自分の、githubアカウントを作るために使ったメールアドレスを書いてください)
+
+## 簡単なワークフロー
+
+* gitプロンプト（黒いコマンドプロンプト）をデスクトップから実効する
+* `cd danzemi-renshuu` (プロジェクトのフォルダーに入る)
 * `git pull` (リポジトリからプロジェクトの最新のバージョンをゲットする)
 * ファイルを変更する
-* `git add ◯◯` (変更があるファイルを選ぶ)
-* `git commit -m "◯◯"` (変更を保存して、その説明を書く)
+* `git add ◯◯` (変更があるファイルを選ぶ。例えば：`git add renshuu.txt hoka.jpg test.lua`)
+* `git commit -m "◯◯"` (変更を保存して、その説明を書く。例えば：`git commit -m "renshuu.txtに"`)
 * `git push` (リポジトリに送る)
+
+## 解けない問題がある、助けて！
+
+* danzemi-renshuuというフォルダーを消す
+* gitプロンプト（黒いコマンドプロンプト）をデスクトップから実効する
+* `git clone https://github.com/sirtetris/danzemi-renshuu.git`
 
 # Lua
 参考： [お気楽 Lua プログラミング超入門](http://www.geocities.jp/m_hiroi/light/lua01.html)
