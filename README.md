@@ -23,7 +23,10 @@
 * `git clone https://github.com/sirtetris/danzemi-renshuu.git`
 
 # Lua
-参考： [お気楽 Lua プログラミング超入門](http://www.geocities.jp/m_hiroi/light/lua01.html)\\
+[実行するためのLuaというプログラム](http://luabinaries.sourceforge.net/download.html)
+
+参考： [お気楽 Lua プログラミング超入門](http://www.geocities.jp/m_hiroi/light/lua01.html)
+
 参考： [Wikipedia](https://ja.wikipedia.org/wiki/Lua)
 
 # LÖVE
