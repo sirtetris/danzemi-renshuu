@@ -1,0 +1,2 @@
+print("konnnitiha")
+io.read

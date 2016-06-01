@@ -1,0 +1,2 @@
+print('AbCdE')
+io.read()
