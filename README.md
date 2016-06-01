@@ -26,7 +26,7 @@
 
 # LÖVE
 
-実行するために： `main.lua`というファイルと`assetsというフォルダーがあるフォルダーをドラッグアンドドロップでLÖVEのアイコンに置く
+実行するために： `main.lua`というファイルと`assets`というフォルダーがあるフォルダーをドラッグアンドドロップでLÖVEのアイコンに置く
 
 参考： [Main Page (日本語)](https://love2d.org/wiki/Main_Page_%28%E6%97%A5%E6%9C%AC%E8%AA%9E%29)
 
