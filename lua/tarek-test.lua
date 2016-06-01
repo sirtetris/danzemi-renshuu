@@ -30,3 +30,9 @@ end
 for i=0, 10, 1 do
     print(some_math(x_number, i))
 end
+
+-- ユーザー入力を読む
+io.write("数字を入力してください。\n")
+io.flush()
+x_string = io.read()
+x_number = tonumber(x_string)
