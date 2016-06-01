@@ -15,14 +15,14 @@ local x_string
 local x_number
 
 -- ユーザー入力を読む
-io.write("数字を入力してください。\n")
+io.write("Please enter a number.\n")
 io.flush()
 x_string = io.read()
 x_number = tonumber(x_string)
 
 -- if分岐
 if type(x_number) == "nil" then
-    print("入力したのは数字じゃない。")
+    print("What you entered is not a number.")
     os.exit()
 end
 
@@ -32,7 +32,7 @@ for i=0, 10, 1 do
 end
 
 -- ユーザー入力を読む
-io.write("数字を入力してください。\n")
+io.write("\n")
 io.flush()
 x_string = io.read()
 x_number = tonumber(x_string)
