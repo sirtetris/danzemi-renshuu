@@ -1,2 +1,2 @@
-print('fjakljfd')
+print('fjakljfda')
 io.read()
