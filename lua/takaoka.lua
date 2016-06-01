@@ -1,0 +1,2 @@
+print('jibaneko')
+io.read()
