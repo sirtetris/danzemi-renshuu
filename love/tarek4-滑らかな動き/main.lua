@@ -110,33 +110,17 @@ function love.draw()
 end
 
 function love.update(dt)
-    for key, value in pairs(keysPressed) do -- 今押されてるキーによって、長方形の動き関数を実行する
-        if value then
-            if key == "up" then
-                rect:accUp()
-            elseif key == "down" then
-                rect:accDown()
-            elseif key == "right" then
-                rect:accRight()
-            elseif key == "left" then
-                rect:accLeft()
-            end
-        end
+    if love.keyboard.isDown("up") then
+        rect:accUp()
+    elseif love.keyboard.isDown( "down") then
+        rect:accDown()
+    elseif love.keyboard.isDown("right") then
+        rect:accRight()
+    elseif love.keyboard.isDown("left") then
+        rect:accLeft()
     end
 
     rect:collide()  -- ウインドウを出るのを防ぐ関数を実行する
     rect:move()     -- 速度によって動く関数
     rect:friction() -- 摩擦関数
-end
-
-function love.keypressed(key, scancode) -- キーが押されれば
-    if scancode ~= nil then
-        keysPressed[scancode] = true
-    end
-end
-
-function love.keyreleased(key, scancode) -- キーが離されれば
-    if scancode ~= nil then
-        keysPressed[scancode] = false
-    end
 end
