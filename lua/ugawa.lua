@@ -6,6 +6,18 @@ print(ary1[1])
 ary2 = {first=1,secound=2}
 print(ary2.first)
 
+a = {}
+function a.test
+	print("a")
+end
+a.test()
+
+b ={}
+function b:test2
+	print("b")
+end
+b:test()
+
 --条件分岐
 print('Please enter number!!')
 num = io.read()
@@ -33,7 +45,8 @@ function roop()
 	fnum = io.read()
 	print('secound number')
 	snum = io.read()
-	print(fnum + snum)
+
+	print('sum:'..fnum + snum)
 
 end	
 
