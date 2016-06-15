@@ -112,11 +112,14 @@ end
 function love.update(dt)
     if love.keyboard.isDown("up") then
         rect:accUp()
-    elseif love.keyboard.isDown( "down") then
+    end
+    if love.keyboard.isDown( "down") then
         rect:accDown()
-    elseif love.keyboard.isDown("right") then
+    end
+    if love.keyboard.isDown("right") then
         rect:accRight()
-    elseif love.keyboard.isDown("left") then
+    end
+    if love.keyboard.isDown("left") then
         rect:accLeft()
     end
 
