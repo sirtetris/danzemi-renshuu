@@ -34,3 +34,7 @@
 
 * ゲーム開発のためのフレームワーク
 * 分けやすい（love.audio、love.graphics、等のモジュール）
+
+[LÖVEゲームの成分](https://i.imgur.com/G7wK9Lk.png)：
+
+![](https://i.imgur.com/G7wK9Lk.png)
