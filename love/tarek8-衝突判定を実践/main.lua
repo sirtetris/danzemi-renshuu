@@ -42,21 +42,21 @@ function HitBox:collidesWithDelta(other, dx, dy)
          (self:getUpper() + dy <= other:getLower())) and
         ((self:getRightmost() + dx >= other:getLeftmost()) and
          (self:getLeftmost() + dx <= other:getRightmost()))) then
-        return true
-    else
-        return false
-    end
-end
-
-function HitBox:touches(other)
-    if math.abs(self:getLower()-other:getUpper()) < 5 then
-        return "y"
-    elseif math.abs(self:getUpper()-other:getLower()) < 5 then
-        return "y"
-    elseif math.abs(self:getRightmost()-other:getLeftmost()) < 5 then
-        return "x"
-    elseif math.abs(self:getLeftmost()-other:getRightmost()) < 5 then
-        return "x"
+        hitAtX = 0
+        hitAtY = 0
+        if self:getLower() < other:getUpper() then -- currently above
+            hitAtY = other:getUpper() - self.h - 0.5
+        end
+        if self:getUpper() > other:getLower() then -- currently below
+            hitAtY = other:getLower() + 0.5
+        end
+        if self:getRightmost() < other:getLeftmost() then -- currently left of
+            hitAtX = other:getLeftmost() - self.w - 0.5
+        end
+        if self:getLeftmost() > other:getRightmost() then -- currently right of
+            hitAtX = other:getRightmost() + 0.5
+        end
+        return {x=hitAtX, y=hitAtY}
     else
         return false
     end
@@ -96,15 +96,21 @@ function Rectangle:move()
         if e ~= self then
             sh = self.hitBox
             oh = e.hitBox
-            if sh:collidesWithDelta(oh, self.xSpeed, 0) then
+            hitX = sh:collidesWithDelta(oh, self.xSpeed, 0)
+            hitY = sh:collidesWithDelta(oh, 0, self.ySpeed)
+            hitXY = sh:collidesWithDelta(oh, self.xSpeed, self.ySpeed)
+            if hitX ~= false then
                 collidesX = true
-            end
-            if sh:collidesWithDelta(oh, 0, self.ySpeed) then
+                self.xSpeed = 0
+                self.xPos = hitX.x
+            elseif hitY ~= false then
                 collidesY = true
-            end
-            if sh:collidesWithDelta(oh, self.xSpeed, self.ySpeed) then
+                self.yPos = hitY.y
+            elseif hitXY ~= false then
                 collidesX = true
                 collidesY = true
+                self.xPos = hitXY.x
+                self.yPos = hitXY.y
             end
         end
     end
@@ -166,7 +172,7 @@ end
 
 -- ### globals
 entities = {}
-rect = Rectangle:new(20, 20, 180, 180)
+rect = Rectangle:new(70, 70, 180, 180)
 table.insert(entities, rect)
 b1 = Rectangle:new(400, 5, 80, 80)
 b2 = Rectangle:new(5, 400, 80, 85)
