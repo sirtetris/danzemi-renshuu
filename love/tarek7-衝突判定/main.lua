@@ -37,6 +37,20 @@ function HitBox:collidesWith(other)
     end
 end
 
+function HitBox:touches(other)
+    if self:getLower() == other:getUpper() then
+        return "lo"
+    elseif self:getUpper() == other:getLower() then
+        return "up"
+    elseif self:getRightmost() == other:getLeftmost() then
+        return "ri"
+    elseif self:getLeftmost() == other:getRightmost() then
+        return "le"
+    else
+        return "-"
+    end
+end
+
 function HitBox:draw()
     love.graphics.setColor(255, 0, 0)
     love.graphics.rectangle("line", self.x, self.y, self.w, self.h)
@@ -45,6 +59,7 @@ end
 -- ### globals
 hb1 = HitBox:new(50, 50, 50, 70)
 hb2 = HitBox:new(250, 250, 150, 50)
+touches = ""
 -- ### /globals
 
 -- ### callback functions
@@ -77,10 +92,11 @@ function love.draw()
     end
     love.graphics.setColor(255, 255, 255)
     love.graphics.print("Collision: " .. txt, 20, 20)
-    love.graphics.print("1l >= 2u: " .. lu, 20, 40)
-    love.graphics.print("1u <= 2l: " .. ul, 20, 60)
-    love.graphics.print("1r >= 2l: " .. rl, 20, 80)
-    love.graphics.print("1l <= 2r: " .. lr, 20, 100)
+    love.graphics.print("1lo >= 2up: " .. lu, 20, 40)
+    love.graphics.print("1up <= 2lo: " .. ul, 20, 60)
+    love.graphics.print("1ri >= 2le: " .. rl, 20, 80)
+    love.graphics.print("1le <= 2ri: " .. lr, 20, 100)
+    love.graphics.print("touch: 1" .. touches, 20, 140)
     hb1:draw()
     hb2:draw()
 end
@@ -88,4 +104,5 @@ end
 function love.update(dt)
     hb1.x = love.mouse.getX()
     hb1.y = love.mouse.getY()
+    touches = hb1:touches(hb2)
 end
