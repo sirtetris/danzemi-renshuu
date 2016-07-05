@@ -1,16 +1,17 @@
 -- constants
-DEBUG = false
 -- /constants
 
 HitBox = {}
 
-function HitBox:new(x, y, w, h)
+function HitBox:new(x, y, w, h, noClip)
     local o = {}
     setmetatable(o, {__index = HitBox})
-    o.x = x     -- x座標
-    o.y = y     -- y座標
-    o.w = w     -- 幅
-    o.h = h     -- 高さ
+    o.name = "HitBox"
+    o.x = x
+    o.y = y
+    o.w = w
+    o.h = h
+    o.noClip = noClip
     return o
 end
 
@@ -69,7 +70,7 @@ function HitBox:collidesWithDelta(other, dx, dy)
 end
 
 function HitBox:draw()
-    if DEBUG then
+    if debug == 1 then
         love.graphics.setColor(255, 0, 0)
         love.graphics.rectangle("line", self.x, self.y, self.w, self.h)
     end
@@ -77,9 +78,10 @@ end
 
 Entity = {}
 
-function Entity:new(xPos, yPos, w, h)
+function Entity:new(xPos, yPos, w, h, noClip)
     local o = {}
     setmetatable(o, {__index = Entity})
+    o.name = "Entity"
     o.xPos = xPos
     o.yPos = yPos
     o.w = w
@@ -88,8 +90,22 @@ function Entity:new(xPos, yPos, w, h)
     o.ySpeed = 0
     o.maxSpeed = 5
     o.jumpLock = 0
-    o.hitBox = HitBox:new(xPos, yPos, w, h)
+    o.hitBox = HitBox:new(xPos, yPos, w, h, noClip)
     return o
+end
+
+function Entity:getAllCollidesWith()
+    collisions = {}
+    for i, e in ipairs(entities) do
+        if e ~= self then
+            sh = self.hitBox
+            oh = e.hitBox
+            if sh:collidesWith(oh) then
+                table.insert(collisions, e)
+            end
+        end
+    end
+    return collisions
 end
 
 function Entity:draw()
@@ -97,13 +113,15 @@ function Entity:draw()
 end
 
 function Entity:tick(dt)
+    self.hitBox.x = self.xPos
+    self.hitBox.y = self.yPos
 end
 
 Block = {}
 setmetatable(Block, {__index = Entity})
 
 function Block:new(xPos, yPos, w, h, color)
-    local o = Entity:new(xPos, yPos, w, h)
+    local o = Entity:new(xPos, yPos, w, h, false)
     setmetatable(o, {__index = Block})
     o.color = color
     return o
@@ -115,52 +133,91 @@ function Block:draw()
     self.hitBox:draw()
 end
 
+function Block:draw()
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
+    love.graphics.rectangle("fill", self.xPos, self.yPos, self.w, self.h)
+    self.hitBox:draw()
+end
+
+Egg = {}
+setmetatable(Egg, {__index = Entity})
+
+function Egg:new(xPos, yPos)
+    local o = Entity:new(xPos, yPos, 40, 60, true)
+    setmetatable(o, {__index = Egg})
+    o.name = "Egg"
+    o.holder = nil
+    return o
+end
+
+function Egg:draw()
+    love.graphics.setColor(200, 200, 200)
+    rx = self.w/2
+    ry = self.h/2
+    love.graphics.ellipse("fill", self.xPos+rx, self.yPos+ry, rx, ry)
+    self.hitBox:draw()
+end
+
+function Egg:tick(dt)
+    Entity.tick(self, dt) -- :tick(dt) doesn't work. because reasons
+    if self.holder == nil then
+        return
+    end
+    self.xPos = self.holder.xPos
+    self.yPos = self.holder.yPos
+end
+
+function Egg:getPickedUp(someone)
+    self.holder = someone
+end
+
+function Egg:getDropped()
+    self.holder = nil
+end
+
 MovingThing = {}
 setmetatable(MovingThing, {__index = Entity})
 
 function MovingThing:new(xPos, yPos, w, h, maxSpeed, frictionFactor, jumpForce, flying, noClip)
-    local o = Entity:new(xPos, yPos, w, h)
+    local o = Entity:new(xPos, yPos, w, h, noClip)
     setmetatable(o, {__index = MovingThing})
     o.maxSpeed = maxSpeed
     o.frictionFactor = frictionFactor
     o.jumpForce = jumpForce
     o.flying = flying
-    o.noClip = noClip
     return o
 end
 
 function MovingThing:move()
     collidesX = false
     collidesY = false
-    if not self.noClip then
-        for i, e in ipairs(entities) do
-            if e ~= self then
-                sh = self.hitBox
-                oh = e.hitBox
-                hitX = sh:collidesWithDelta(oh, self.xSpeed, 0)
-                hitY = sh:collidesWithDelta(oh, 0, self.ySpeed)
-                hitXY = sh:collidesWithDelta(oh, self.xSpeed, self.ySpeed)
-                if hitX ~= false then
-                    collidesX = true
-                    self.xSpeed = 0
-                    self.xPos = hitX.x
-                elseif hitY ~= false then
-                    collidesY = true
-                    self.ySpeed = 0
-                    self.yPos = hitY.y
-                    if hitY.landedFlag then
-                        self.jumpLock = 0
-                    end
-                elseif hitXY ~= false then
-                    collidesX = true
-                    collidesY = true
-                    self.xSpeed = 0
-                    self.ySpeed = 0
-                    self.xPos = hitXY.x
-                    self.yPos = hitXY.y
-                    if hitXY.landedFlag then
-                        self.jumpLock = 0
-                    end
+    for i, e in ipairs(entities) do
+        if e ~= self and not e.hitBox.noClip then
+            sh = self.hitBox
+            oh = e.hitBox
+            hitX = sh:collidesWithDelta(oh, self.xSpeed, 0)
+            hitY = sh:collidesWithDelta(oh, 0, self.ySpeed)
+            hitXY = sh:collidesWithDelta(oh, self.xSpeed, self.ySpeed)
+            if hitX ~= false then
+                collidesX = true
+                self.xSpeed = 0
+                self.xPos = hitX.x
+            elseif hitY ~= false then
+                collidesY = true
+                self.ySpeed = 0
+                self.yPos = hitY.y
+                if hitY.landedFlag then
+                    self.jumpLock = 0
+                end
+            elseif hitXY ~= false then
+                collidesX = true
+                collidesY = true
+                self.xSpeed = 0
+                self.ySpeed = 0
+                self.xPos = hitXY.x
+                self.yPos = hitXY.y
+                if hitXY.landedFlag then
+                    self.jumpLock = 0
                 end
             end
         end
@@ -215,13 +272,12 @@ function MovingThing:jump()
 end
 
 function MovingThing:tick(dt)
+    Entity.tick(self, dt) -- :tick(dt) doesn't work. because reasons
     self:move()
     self:friction()
     if not self.flying then
         self:gravity()
     end
-    self.hitBox.x = self.xPos
-    self.hitBox.y = self.yPos
 end
 
 Player = {}
@@ -234,7 +290,25 @@ function Player:new(xPos, yPos)
     o.animationDtSum = 0
     o.animationFrame = 0
     o.currImgKey = 'mc_w_r1'
+    o.holding = nil
     return o
+end
+
+function Player:pickUp()
+    candidates = self:getAllCollidesWith()
+    for i, e in ipairs(candidates) do
+        if e.name == "Egg" then
+            e:getPickedUp(self)
+            self.holding = e
+        end
+    end
+end
+
+function Player:drop()
+    if self.holding ~= nil then
+        self.holding:getDropped()
+        self.holding = nil
+    end
 end
 
 function Player:tick(dt)
@@ -259,10 +333,14 @@ function Player:draw()
 end
 
 -- ### globals
+debug = 0
+debugMsg = ""
 entities = {}
 images = {}
 player = Player:new(30, 180)
 table.insert(entities, player)
+egg1 = Egg:new(340, 280)
+table.insert(entities, egg1)
 floor = Block:new(0, 590, 800, 5, {200, 200, 200})
 plattform1 = Block:new(80, 520, 80, 5, {100, 200, 100})
 plattform2 = Block:new(200, 450, 160, 5, {100, 100, 200})
@@ -298,7 +376,7 @@ end
 function love.draw()
     love.graphics.setColor(255, 255, 255)
     love.graphics.print("Position: (" .. player.xPos .. "|" .. player.yPos .. ").", 20, 20)
-    love.graphics.print("debug: " .. player.animationFrame, 20, 40)
+    love.graphics.print("debug: " .. debugMsg, 20, 40)
     for i, e in ipairs(entities) do
         e:draw()
     end
@@ -314,8 +392,20 @@ function love.update(dt)
     if love.keyboard.isDown("left") then
         player:accLeft()
     end
+    if love.keyboard.isDown("g") then
+        player:pickUp()
+    end
+    if love.keyboard.isDown("d") then
+        player:drop()
+    end
 
     for i, e in ipairs(entities) do
         e:tick(dt)
+    end
+end
+
+function love.keypressed(key, scancode)
+    if scancode == 'h' then
+        debug = 1 - debug
     end
 end
