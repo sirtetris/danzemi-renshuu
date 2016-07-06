@@ -3,7 +3,7 @@
 
 HitBox = {}
 
-function HitBox:new(x, y, w, h, noClip)
+function HitBox:new(x, y, w, h, noClip, playerNoClip)
     local o = {}
     setmetatable(o, {__index = HitBox})
     o.name = "HitBox"
@@ -12,6 +12,7 @@ function HitBox:new(x, y, w, h, noClip)
     o.w = w
     o.h = h
     o.noClip = noClip
+    o.playerNoClip = playerNoClip
     return o
 end
 
@@ -78,7 +79,7 @@ end
 
 Entity = {}
 
-function Entity:new(xPos, yPos, w, h, noClip)
+function Entity:new(xPos, yPos, w, h, noClip, playerNoClip)
     local o = {}
     setmetatable(o, {__index = Entity})
     o.name = "Entity"
@@ -90,7 +91,7 @@ function Entity:new(xPos, yPos, w, h, noClip)
     o.ySpeed = 0
     o.maxSpeed = 5
     o.jumpLock = 0
-    o.hitBox = HitBox:new(xPos, yPos, w, h, noClip)
+    o.hitBox = HitBox:new(xPos, yPos, w, h, noClip, playerNoClip)
     return o
 end
 
@@ -121,7 +122,7 @@ Block = {}
 setmetatable(Block, {__index = Entity})
 
 function Block:new(xPos, yPos, w, h, color)
-    local o = Entity:new(xPos, yPos, w, h, false)
+    local o = Entity:new(xPos, yPos, w, h, false, false)
     setmetatable(o, {__index = Block})
     o.color = color
     return o
@@ -139,47 +140,11 @@ function Block:draw()
     self.hitBox:draw()
 end
 
-Egg = {}
-setmetatable(Egg, {__index = Entity})
-
-function Egg:new(xPos, yPos)
-    local o = Entity:new(xPos, yPos, 40, 60, true)
-    setmetatable(o, {__index = Egg})
-    o.name = "Egg"
-    o.holder = nil
-    return o
-end
-
-function Egg:draw()
-    love.graphics.setColor(200, 200, 200)
-    rx = self.w/2
-    ry = self.h/2
-    love.graphics.ellipse("fill", self.xPos+rx, self.yPos+ry, rx, ry)
-    self.hitBox:draw()
-end
-
-function Egg:tick(dt)
-    Entity.tick(self, dt) -- :tick(dt) doesn't work. because reasons
-    if self.holder == nil then
-        return
-    end
-    self.xPos = self.holder.xPos
-    self.yPos = self.holder.yPos
-end
-
-function Egg:getPickedUp(someone)
-    self.holder = someone
-end
-
-function Egg:getDropped()
-    self.holder = nil
-end
-
 MovingThing = {}
 setmetatable(MovingThing, {__index = Entity})
 
-function MovingThing:new(xPos, yPos, w, h, maxSpeed, frictionFactor, jumpForce, flying, noClip)
-    local o = Entity:new(xPos, yPos, w, h, noClip)
+function MovingThing:new(xPos, yPos, w, h, maxSpeed, frictionFactor, jumpForce, flying, noClip, playerNoClip)
+    local o = Entity:new(xPos, yPos, w, h, noClip, playerNoClip)
     setmetatable(o, {__index = MovingThing})
     o.maxSpeed = maxSpeed
     o.frictionFactor = frictionFactor
@@ -192,7 +157,13 @@ function MovingThing:move()
     collidesX = false
     collidesY = false
     for i, e in ipairs(entities) do
-        if e ~= self and not e.hitBox.noClip then
+        haveToTest = true
+        if e == self then haveToTest = false end
+        if e.hitBox.noClip then haveToTest = false end
+        if self.hitBox.noClip then haveToTest = false end
+        if self.name == "Player" and e.hitBox.playerNoClip then haveToTest = false end
+        if e.name == "Player" and self.hitBox.playerNoClip then haveToTest = false end
+        if haveToTest then
             sh = self.hitBox
             oh = e.hitBox
             hitX = sh:collidesWithDelta(oh, self.xSpeed, 0)
@@ -201,7 +172,9 @@ function MovingThing:move()
             if hitX ~= false then
                 collidesX = true
                 self.xSpeed = 0
-                self.xPos = hitX.x
+                if hitX.x ~= 0 then -- FIXME bad hack
+                    self.xPos = hitX.x
+                end
             elseif hitY ~= false then
                 collidesY = true
                 self.ySpeed = 0
@@ -292,17 +265,55 @@ function MovingThing:tick(dt)
     end
 end
 
+Egg = {}
+setmetatable(Egg, {__index = MovingThing})
+
+function Egg:new(xPos, yPos)
+    local o = MovingThing:new(xPos, yPos, 40, 60, 0, 0, 0, false, false, true)
+    setmetatable(o, {__index = Egg})
+    o.name = "Egg"
+    o.holder = nil
+    return o
+end
+
+function Egg:draw()
+    love.graphics.setColor(200, 200, 200)
+    rx = self.w/2
+    ry = self.h/2
+    love.graphics.ellipse("fill", self.xPos+rx, self.yPos+ry, rx, ry)
+    self.hitBox:draw()
+end
+
+function Egg:tick(dt)
+    MovingThing.tick(self, dt) -- :tick(dt) doesn't work. because reasons
+    if self.holder == nil then
+        return
+    end
+    self.xPos = self.holder.xPos
+    self.yPos = self.holder.yPos
+end
+
+function Egg:getPickedUp(someone)
+    self.holder = someone
+end
+
+function Egg:getDropped()
+    self.holder = nil
+    self.ySpeed = 0
+end
+
 Player = {}
 setmetatable(Player, {__index = MovingThing})
 
 function Player:new(xPos, yPos)
-    local o = MovingThing:new(xPos, yPos, 116, 158, 5, 0.5, 30, false, false)
+    local o = MovingThing:new(xPos, yPos, 116, 158, 5, 0.5, 30, false, false, false)
     setmetatable(o, {__index = Player})
     o.alive = true
     o.animationDtSum = 0
     o.animationFrame = 0
     o.currImgKey = 'mc_w_r1'
     o.holding = nil
+    o.name = "Player"
     return o
 end
 
@@ -312,6 +323,7 @@ function Player:pickUp()
         if e.name == "Egg" then
             e:getPickedUp(self)
             self.holding = e
+            self.maxSpeed = 3
         end
     end
 end
@@ -320,6 +332,7 @@ function Player:drop()
     if self.holding ~= nil then
         self.holding:getDropped()
         self.holding = nil
+        self.maxSpeed = 5
     end
 end
 
@@ -351,7 +364,7 @@ entities = {}
 images = {}
 player = Player:new(30, 180)
 table.insert(entities, player)
-egg1 = Egg:new(340, 280)
+egg1 = Egg:new(30, 10)
 table.insert(entities, egg1)
 floor = Block:new(0, 590, 800, 5, {200, 200, 200})
 plattform1 = Block:new(80, 520, 80, 5, {100, 200, 100})
