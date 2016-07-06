@@ -308,13 +308,17 @@ setmetatable(Player, {__index = MovingThing})
 function Player:new(xPos, yPos)
     local o = MovingThing:new(xPos, yPos, 116, 158, 5, 0.5, 30, false, false, false)
     setmetatable(o, {__index = Player})
-    o.alive = true
+    o.hp = 100
     o.animationDtSum = 0
     o.animationFrame = 0
     o.currImgKey = 'mc_w_r1'
     o.holding = nil
     o.name = "Player"
     return o
+end
+
+function Player:takeDamage(dmg)
+    self.hp = self.hp - dmg
 end
 
 function Player:pickUp()
@@ -336,7 +340,14 @@ function Player:drop()
     end
 end
 
+function Player:die()
+    self.maxSpeed = 0
+end
+
 function Player:tick(dt)
+    if self.hp <= 0 then
+        self:die()
+    end
     MovingThing.tick(self, dt) -- :tick(dt) doesn't work. because reasons
     self.animationDtSum = self.animationDtSum + dt
     imgKey = 'mc_w_'
