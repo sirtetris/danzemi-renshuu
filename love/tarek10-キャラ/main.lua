@@ -263,6 +263,18 @@ function MovingThing:accLeft()
     end
 end
 
+function MovingThing:accUp()
+    if math.abs(self.ySpeed) <= self.maxSpeed then
+        self.ySpeed = self.ySpeed - 2
+    end
+end
+
+function MovingThing:accDown()
+    if math.abs(self.ySpeed) <= self.maxSpeed then
+        self.ySpeed = self.ySpeed + 2
+    end
+end
+
 function MovingThing:jump()
     if self.jumpLock > 0 then
         return
