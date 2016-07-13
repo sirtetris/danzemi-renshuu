@@ -74,6 +74,10 @@ function HitBox:collidesWithDelta(other, dx, dy)
     end
 end
 
+function HitBox:getCenter()
+    return {x=self.x+(self.w/2), y=self.y+(self.h/2)}
+end
+
 function HitBox:draw()
     if debug == 1 then
         love.graphics.setColor(255, 0, 0)
@@ -97,6 +101,34 @@ function Entity:new(xPos, yPos, w, h, noClip, playerNoClip)
     o.jumpLock = 0
     o.hitBox = HitBox:new(xPos, yPos, w, h, noClip, playerNoClip)
     return o
+end
+
+function Entity:findNearest(limit)
+    selfCenter = self.hitBox:getCenter()
+    nearest = nil
+    nearestDistance = 9999
+    for i, e in ipairs(entities) do
+        if e ~= self then
+            otherCenter = e.hitBox:getCenter()
+            xDif = selfCenter.x - otherCenter.x
+            yDif = selfCenter.y - otherCenter.y
+            dist = math.sqrt((xDif*xDif) + (yDif*yDif))
+            if dist < nearestDistance then
+                nearest = e
+                nearestDistance = dist
+            end
+        end
+    end
+    if nearestDistance > limit then
+        return nil
+    else
+        nCenter = nearest.hitBox:getCenter()
+        if debug == 1 then
+            love.graphics.setColor(200, 0, 0)
+            love.graphics.line(selfCenter.x, selfCenter.y, nCenter.x, nCenter.y)
+        end
+        return nearest
+    end
 end
 
 function Entity:getAllCollidesWith()
@@ -324,12 +356,12 @@ Player = {}
 setmetatable(Player, {__index = MovingThing})
 
 function Player:new(xPos, yPos)
-    local o = MovingThing:new(xPos, yPos, 58, 79, 3, 0.5, 24, false, false, false)
+    local o = MovingThing:new(xPos, yPos, 79, 129, 3, 0.5, 24, false, false, false)
     setmetatable(o, {__index = Player})
     o.hp = 100
     o.animationDtSum = 0
     o.animationFrame = 0
-    o.currImgKey = 'mc_w_r1'
+    o.currImgKey = 'mc_s'
     o.holding = nil
     o.name = "Player"
     return o
@@ -368,21 +400,30 @@ function Player:tick(dt)
     end
     MovingThing.tick(self, dt) -- :tick(dt) doesn't work. because reasons
     self.animationDtSum = self.animationDtSum + dt
-    imgKey = 'mc_w_'
-    if self.xSpeed >= 0 then
-        imgKey = imgKey .. 'r'
+    imgKey = 'mc_'
+    if self.xSpeed == 0 then
+        imgKey = imgKey ..'s'
     else
-        imgKey = imgKey .. 'l'
+        imgKey = imgKey .. 'w_'
+        if self.xSpeed >= 0 then
+            imgKey = imgKey .. 'r'
+        else
+            imgKey = imgKey .. 'l'
+        end
+        delay = 0.13
+        if self.holding ~= nil then delay = 0.26 end
+        if self.animationDtSum > delay and math.abs(self.xSpeed) > 0 then
+            self.animationFrame = (self.animationFrame + 1) % 5
+            self.animationDtSum = 0
+        end
+        imgKey = imgKey .. (self.animationFrame + 1)
     end
-    if self.animationDtSum > 0.3 and math.abs(self.xSpeed) > 0 then
-        self.animationFrame = (self.animationFrame + 1) % 4
-        self.animationDtSum = 0
-    end
-    self.currImgKey = imgKey .. (self.animationFrame + 1)
+    self.currImgKey = imgKey
+    debugMsg = imgKey
 end
 
 function Player:draw()
-    love.graphics.draw(images[self.currImgKey], self.xPos, self.yPos, 0, 0.1, 0.1)
+    love.graphics.draw(images[self.currImgKey], self.xPos, self.yPos, 0, 0.15, 0.15)
     self.hitBox:draw()
 end
 
@@ -395,18 +436,17 @@ score = 0
 eggtimeout = 2
 entities = {}
 images = {}
-player = Player:new(130, 700)
+player = Player:new(130, 600)
 table.insert(entities, player)
 floor = Block:new(0, 725, 600, 5, {99, 59, 39})
 ceiling = Block:new(0, 0, 600, 5, {99, 59, 39})
 wall_l = Block:new(0, 5, 5, 720, {99, 59, 39})
 wall_r = Block:new(595, 5, 5, 720, {99, 59, 39})
-plattform1 = Block:new(80, 520, 80, 5, {100, 200, 100})
-plattform2 = Block:new(250, 450, 110, 5, {100, 100, 200})
-plattform3 = Block:new(400, 390, 5, 50, {200, 100, 100})
+plattform1 = Block:new(280, 600, 80, 5, {100, 200, 100})
+plattform2 = Block:new(80, 470, 110, 5, {100, 100, 200})
+plattform3 = Block:new(330, 390, 5, 50, {200, 100, 100})
 plattform4 = Block:new(60, 230, 80, 5, {200, 200, 100}) -- top
-plattform5 = Block:new(240, 290, 80, 5, {200, 100, 200})
-plattform6 = Block:new(250, 620, 80, 5, {200, 100, 200})
+plattform5 = Block:new(180, 290, 15, 5, {200, 100, 200})
 eggSpawn = TriggerArea:new(60, 220, 80, 10)
 eggGoal = TriggerArea:new(500, 715, 80, 10)
 table.insert(entities, floor)
@@ -418,7 +458,6 @@ table.insert(entities, plattform2)
 table.insert(entities, plattform3)
 table.insert(entities, plattform4)
 table.insert(entities, plattform5)
-table.insert(entities, plattform6)
 table.insert(entities, eggSpawn)
 table.insert(entities, eggGoal)
 -- ### /globals
@@ -437,10 +476,14 @@ function love.load()
     images.mc_w_r2 = love.graphics.newImage('assets/mc_w_r2.png')
     images.mc_w_r3 = love.graphics.newImage('assets/mc_w_r3.png')
     images.mc_w_r4 = love.graphics.newImage('assets/mc_w_r4.png')
+    images.mc_w_r5 = love.graphics.newImage('assets/mc_w_r5.png')
     images.mc_w_l1 = love.graphics.newImage('assets/mc_w_l1.png')
     images.mc_w_l2 = love.graphics.newImage('assets/mc_w_l2.png')
     images.mc_w_l3 = love.graphics.newImage('assets/mc_w_l3.png')
     images.mc_w_l4 = love.graphics.newImage('assets/mc_w_l4.png')
+    images.mc_w_l5 = love.graphics.newImage('assets/mc_w_l5.png')
+    images.bg = love.graphics.newImage('assets/bg.png')
+    images.mc_s = love.graphics.newImage('assets/mc_s.png')
 end
 
 function love.draw()
@@ -456,15 +499,19 @@ function love.draw()
 
     if gamePhase == 1 then
         love.graphics.setColor(255, 255, 255)
+        love.graphics.draw(images.bg, 0, 0)
         love.graphics.print("Position: (" .. player.xPos .. "|" .. player.yPos .. ").", 20, 20)
         love.graphics.print("debug: " .. debugMsg, 20, 40)
         love.graphics.setFont(STDFONT_20);
+        love.graphics.setColor(20, 20, 20)
         love.graphics.print("TIME: " .. math.floor(countdown + 0.5), 480, 20)
         love.graphics.print("SCORE: " .. score, 480, 50)
         love.graphics.setFont(STDFONT);
+        love.graphics.setColor(255, 255, 255)
         for i, e in ipairs(entities) do
             e:draw()
         end
+        tmp = player:findNearest(9999)
     end
 
     if gamePhase == 2 then
@@ -479,9 +526,6 @@ end
 
 function love.update(dt)
     if gamePhase == 1 then
-        if love.keyboard.isDown("space") then
-            player:jump()
-        end
         if love.keyboard.isDown("right") then
             player:accRight()
         end
@@ -530,7 +574,13 @@ function love.keypressed(key, scancode)
     if gamePhase == 0 and scancode == "space" then
         gamePhase = 1
     end
+    if gamePhase == 1 and scancode == "space" then
+        player:jump()
+    end
     if scancode == "h" then
         debug = 1 - debug
     end
+end
+
+function love.keyreleased(key, scancode)
 end
