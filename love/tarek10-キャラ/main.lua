@@ -144,6 +144,16 @@ function Block:draw()
     self.hitBox:draw()
 end
 
+TriggerArea = {}
+setmetatable(TriggerArea, {__index = Entity})
+
+function TriggerArea:new(xPos, yPos, w, h)
+    local o = Entity:new(xPos, yPos, w, h, true, true)
+    setmetatable(o, {__index = TriggerArea})
+    o.color = color
+    return o
+end
+
 MovingThing = {}
 setmetatable(MovingThing, {__index = Entity})
 
@@ -167,6 +177,7 @@ function MovingThing:move()
         if self.hitBox.noClip then haveToTest = false end
         if self.name == "Player" and e.hitBox.playerNoClip then haveToTest = false end
         if e.name == "Player" and self.hitBox.playerNoClip then haveToTest = false end
+        if e.name == "Egg" and self.name == "Egg" then haveToTest = false end
         if haveToTest then
             sh = self.hitBox
             oh = e.hitBox
@@ -277,14 +288,17 @@ function Egg:new(xPos, yPos)
     setmetatable(o, {__index = Egg})
     o.name = "Egg"
     o.holder = nil
+    o.color = {math.random(0, 255), math.random(0, 255), math.random(0, 255)}
     return o
 end
 
 function Egg:draw()
-    love.graphics.setColor(200, 200, 200)
+    love.graphics.setColor(self.color[1], self.color[2], self.color[3])
     rx = self.w/2
     ry = self.h/2
     love.graphics.ellipse("fill", self.xPos+rx, self.yPos+ry, rx, ry)
+    love.graphics.setColor(30, 30, 30)
+    love.graphics.ellipse("line", self.xPos+rx, self.yPos+ry, rx, ry)
     self.hitBox:draw()
 end
 
@@ -328,10 +342,10 @@ end
 function Player:pickUp()
     candidates = self:getAllCollidesWith()
     for i, e in ipairs(candidates) do
-        if e.name == "Egg" then
+        if e.name == "Egg" and self.holding == nil then
             e:getPickedUp(self)
             self.holding = e
-            self.maxSpeed = 3
+            self.maxSpeed = 1.5
         end
     end
 end
@@ -377,21 +391,24 @@ debug = 0
 debugMsg = ""
 gamePhase = 0 -- 0=start, 1=game, 2=end
 countdown = 120
+score = 0
+eggtimeout = 2
 entities = {}
 images = {}
-player = Player:new(30, 180)
+player = Player:new(130, 700)
 table.insert(entities, player)
-egg1 = Egg:new(30, 10)
-table.insert(entities, egg1)
 floor = Block:new(0, 725, 600, 5, {99, 59, 39})
 ceiling = Block:new(0, 0, 600, 5, {99, 59, 39})
 wall_l = Block:new(0, 5, 5, 720, {99, 59, 39})
 wall_r = Block:new(595, 5, 5, 720, {99, 59, 39})
 plattform1 = Block:new(80, 520, 80, 5, {100, 200, 100})
-plattform2 = Block:new(200, 450, 160, 5, {100, 100, 200})
+plattform2 = Block:new(250, 450, 110, 5, {100, 100, 200})
 plattform3 = Block:new(400, 390, 5, 50, {200, 100, 100})
-plattform4 = Block:new(200, 340, 120, 5, {200, 200, 100})
+plattform4 = Block:new(60, 230, 80, 5, {200, 200, 100}) -- top
 plattform5 = Block:new(240, 290, 80, 5, {200, 100, 200})
+plattform6 = Block:new(250, 620, 80, 5, {200, 100, 200})
+eggSpawn = TriggerArea:new(60, 220, 80, 10)
+eggGoal = TriggerArea:new(500, 715, 80, 10)
 table.insert(entities, floor)
 table.insert(entities, ceiling)
 table.insert(entities, wall_l)
@@ -401,6 +418,9 @@ table.insert(entities, plattform2)
 table.insert(entities, plattform3)
 table.insert(entities, plattform4)
 table.insert(entities, plattform5)
+table.insert(entities, plattform6)
+table.insert(entities, eggSpawn)
+table.insert(entities, eggGoal)
 -- ### /globals
 
 -- ### callback functions
@@ -440,6 +460,7 @@ function love.draw()
         love.graphics.print("debug: " .. debugMsg, 20, 40)
         love.graphics.setFont(STDFONT_20);
         love.graphics.print("TIME: " .. math.floor(countdown + 0.5), 480, 20)
+        love.graphics.print("SCORE: " .. score, 480, 50)
         love.graphics.setFont(STDFONT);
         for i, e in ipairs(entities) do
             e:draw()
@@ -477,8 +498,28 @@ function love.update(dt)
             gamePhase = 2
         end
 
+        startEggs = 0
+        goalEggs = 0
+
         for i, e in ipairs(entities) do
             e:tick(dt)
+
+            if eggSpawn.hitBox:collidesWith(e.hitBox) and e.name == "Egg" then
+                startEggs = startEggs + 1
+            end
+            if eggGoal.hitBox:collidesWith(e.hitBox) and e.name == "Egg" then
+                goalEggs = goalEggs + 1
+            end
+        end
+        --debugMsg = "s: " .. startEggs .. " | g: " .. goalEggs
+
+        score = goalEggs
+        if startEggs == 0 then
+            eggtimeout = eggtimeout - dt
+            if eggtimeout <= 0 then
+                table.insert(entities, Egg:new(math.random(70, 130), 194))
+                eggtimeout = 2
+            end
         end
     end
 end
