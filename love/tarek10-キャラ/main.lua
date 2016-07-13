@@ -471,6 +471,8 @@ function love.draw()
         love.graphics.setColor(255, 255, 255)
         love.graphics.setFont(JAFONT_60);
         love.graphics.print("ゲームオーバー", 85, 275)
+        love.graphics.setFont(STDFONT_20);
+        love.graphics.print(">  SCORE: " .. score .. "  <", 215, 350)
         love.graphics.setFont(STDFONT);
     end
 end
