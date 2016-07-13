@@ -1,4 +1,8 @@
 -- constants
+JAFONT = nil
+JAFONT_60 = nil
+STDFONT = nil
+STDFONT_20 = nil
 -- /constants
 
 HitBox = {}
@@ -269,7 +273,7 @@ Egg = {}
 setmetatable(Egg, {__index = MovingThing})
 
 function Egg:new(xPos, yPos)
-    local o = MovingThing:new(xPos, yPos, 40, 60, 0, 0, 0, false, false, true)
+    local o = MovingThing:new(xPos, yPos, 20, 30, 0, 0, 0, false, false, true)
     setmetatable(o, {__index = Egg})
     o.name = "Egg"
     o.holder = nil
@@ -306,7 +310,7 @@ Player = {}
 setmetatable(Player, {__index = MovingThing})
 
 function Player:new(xPos, yPos)
-    local o = MovingThing:new(xPos, yPos, 116, 158, 5, 0.5, 30, false, false, false)
+    local o = MovingThing:new(xPos, yPos, 58, 79, 3, 0.5, 24, false, false, false)
     setmetatable(o, {__index = Player})
     o.hp = 100
     o.animationDtSum = 0
@@ -341,7 +345,7 @@ function Player:drop()
 end
 
 function Player:die()
-    self.maxSpeed = 0
+    gamePhase = 2
 end
 
 function Player:tick(dt)
@@ -364,40 +368,50 @@ function Player:tick(dt)
 end
 
 function Player:draw()
-    love.graphics.draw(images[self.currImgKey], self.xPos, self.yPos, 0, 0.2, 0.2)
+    love.graphics.draw(images[self.currImgKey], self.xPos, self.yPos, 0, 0.1, 0.1)
     self.hitBox:draw()
 end
 
 -- ### globals
 debug = 0
 debugMsg = ""
+gamePhase = 0 -- 0=start, 1=game, 2=end
+countdown = 120
 entities = {}
 images = {}
 player = Player:new(30, 180)
 table.insert(entities, player)
 egg1 = Egg:new(30, 10)
 table.insert(entities, egg1)
-floor = Block:new(0, 590, 800, 5, {200, 200, 200})
+floor = Block:new(0, 725, 600, 5, {99, 59, 39})
+ceiling = Block:new(0, 0, 600, 5, {99, 59, 39})
+wall_l = Block:new(0, 5, 5, 720, {99, 59, 39})
+wall_r = Block:new(595, 5, 5, 720, {99, 59, 39})
 plattform1 = Block:new(80, 520, 80, 5, {100, 200, 100})
 plattform2 = Block:new(200, 450, 160, 5, {100, 100, 200})
 plattform3 = Block:new(400, 390, 5, 50, {200, 100, 100})
 plattform4 = Block:new(200, 340, 120, 5, {200, 200, 100})
 plattform5 = Block:new(240, 290, 80, 5, {200, 100, 200})
-plattform6 = Block:new(560, 290, 180, 5, {100, 200, 200})
 table.insert(entities, floor)
+table.insert(entities, ceiling)
+table.insert(entities, wall_l)
+table.insert(entities, wall_r)
 table.insert(entities, plattform1)
 table.insert(entities, plattform2)
 table.insert(entities, plattform3)
 table.insert(entities, plattform4)
 table.insert(entities, plattform5)
-table.insert(entities, plattform6)
 -- ### /globals
 
 -- ### callback functions
 
 function love.load()
+    STDFONT = love.graphics.getFont()
+    STDFONT_20 = love.graphics.newFont(20);
+    JAFONT = love.graphics.newFont("assets/ipaexg.ttf", 20);
+    JAFONT_60 = love.graphics.newFont("assets/ipaexg.ttf", 60);
     love.window.setTitle("オブジェクト指向　テスト")
-    love.window.setMode(800, 600, {})
+    love.window.setMode(600, 730, {})
     love.graphics.setBackgroundColor(150, 150, 150)
     images.mc_w_r1 = love.graphics.newImage('assets/mc_w_r1.png')
     images.mc_w_r2 = love.graphics.newImage('assets/mc_w_r2.png')
@@ -410,38 +424,70 @@ function love.load()
 end
 
 function love.draw()
-    love.graphics.setColor(255, 255, 255)
-    love.graphics.print("Position: (" .. player.xPos .. "|" .. player.yPos .. ").", 20, 20)
-    love.graphics.print("debug: " .. debugMsg, 20, 40)
-    for i, e in ipairs(entities) do
-        e:draw()
+    if gamePhase == 0 then
+        love.graphics.setColor(255, 255, 255)
+        love.graphics.setFont(JAFONT_60);
+        love.graphics.print("ゲームタイトル", 85, 275)
+        love.graphics.rectangle("line", 80, 265, 433, 70)
+        love.graphics.setFont(JAFONT);
+        love.graphics.print("→　スペースキーでゲーム開始　←", 132, 350)
+        love.graphics.setFont(STDFONT);
+    end
+
+    if gamePhase == 1 then
+        love.graphics.setColor(255, 255, 255)
+        love.graphics.print("Position: (" .. player.xPos .. "|" .. player.yPos .. ").", 20, 20)
+        love.graphics.print("debug: " .. debugMsg, 20, 40)
+        love.graphics.setFont(STDFONT_20);
+        love.graphics.print("TIME: " .. math.floor(countdown + 0.5), 480, 20)
+        love.graphics.setFont(STDFONT);
+        for i, e in ipairs(entities) do
+            e:draw()
+        end
+    end
+
+    if gamePhase == 2 then
+        love.graphics.setColor(255, 255, 255)
+        love.graphics.setFont(JAFONT_60);
+        love.graphics.print("ゲームオーバー", 85, 275)
+        love.graphics.setFont(STDFONT);
     end
 end
 
 function love.update(dt)
-    if love.keyboard.isDown("space") then
-        player:jump()
-    end
-    if love.keyboard.isDown("right") then
-        player:accRight()
-    end
-    if love.keyboard.isDown("left") then
-        player:accLeft()
-    end
-    if love.keyboard.isDown("g") then
-        player:pickUp()
-    end
-    if love.keyboard.isDown("d") then
-        player:drop()
-    end
+    if gamePhase == 1 then
+        if love.keyboard.isDown("space") then
+            player:jump()
+        end
+        if love.keyboard.isDown("right") then
+            player:accRight()
+        end
+        if love.keyboard.isDown("left") then
+            player:accLeft()
+        end
+        if love.keyboard.isDown("g") then
+            player:pickUp()
+        end
+        if love.keyboard.isDown("d") then
+            player:drop()
+        end
 
-    for i, e in ipairs(entities) do
-        e:tick(dt)
+        countdown = countdown - dt
+        if countdown <= 0.5 then
+            gamePhase = 2
+        end
+
+        for i, e in ipairs(entities) do
+            e:tick(dt)
+        end
     end
 end
 
 function love.keypressed(key, scancode)
-    if scancode == 'h' then
+    if gamePhase == 0 and scancode == "space" then
+        gamePhase = 1
+    end
+    if scancode == "h" then
         debug = 1 - debug
     end
 end
