@@ -40,7 +40,6 @@ end
 
 function TextIndicator:follow()
     oc = self.owner.hitBox:getCenter()
-    --debugMsg = oc.x .. " | " .. oc.y
     self.xOrigin = oc.x - 26
     self.yOrigin = oc.y - 50
 end
@@ -66,7 +65,6 @@ end
 
 function TextIndicator:deactivate()
     self.active = false
-    self.owner = nil
 end
 
 function TextIndicator:tick()
@@ -484,6 +482,7 @@ function Player:tick(dt)
         indi:activate(self.target)
     else
         indi:deactivate()
+        indi:reset()
     end
 
     -- animation
