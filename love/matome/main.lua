@@ -1,10 +1,3 @@
--- TODO notes:
--- 1 TextIndicator class (wabbling over enemy/crosshair)
---      if active and right keys pressed mark 'owning' enemy dead
---      -> dead entity garbage collection routine
--- spawning of enemies
---      smhw over plattforms
-
 -- constants
 JAFONT = nil
 JAFONT_60 = nil
@@ -571,6 +564,97 @@ function Enemy:die()
     self.alive = false
 end
 
+-- - - -
+
+Matsu = {}
+setmetatable(Matsu, {__index = MovingThing})
+
+function Matsu:new(xPos, yPos)
+    local o = MovingThing:new(xPos, yPos, 10, 10, 5, 0.5, 30, true, true)
+    setmetatable(o, {__index = Matsu})
+    o.time = 0
+    o.xOrigin = xPos
+    o.name = "Enemy"
+    o.attackTimeout = 0.5
+    o.alive = true
+    return o
+end
+
+function Matsu:matsuRight()
+    self.xPos = self.xPos + 0.5
+    if self.xPos == self.xOrigin+150 then
+      self.time = 1
+    end
+end
+
+function Matsu:matsuLeft()
+    self.xPos = self.xPos - 0.5
+    if self.xPos == self.xOrigin then
+        self.time = 0
+    end
+end
+
+function Matsu:draw()
+    self.hitBox:draw()
+
+    love.graphics.setColor(255, 5, 5)
+    love.graphics.rectangle("fill", self.xPos, self.yPos, self.w, self.h)
+end
+
+function Matsu:tick(dt)
+    MovingThing.tick(self, dt)
+
+    if self.hitBox:collidesWith(player.hitBox) then
+        self:attack(dt)
+    end
+    if  self.time == 0 then
+        self:matsuRight()
+    elseif  self.time == 1 then
+        self:matsuLeft()
+    end
+end
+
+function Matsu:attack(dt)
+    self.attackTimeout = self.attackTimeout - dt
+    if self.attackTimeout <= 0 then
+        player:takeDamage(3)
+        self.attackTimeout = 0.5
+    end
+end
+
+function Matsu:die()
+    self.alive = false
+end
+
+-- - - -
+
+Kawateki = {}
+setmetatable(Kawateki, {__index = MovingThing})
+
+function Kawateki:new(w,h,xPos, yPos)
+    local o = MovingThing:new(xPos, yPos, w, h, 5, 0.5, 30, true, true)
+    setmetatable(o, {__index = Kawateki})
+    o.time = 0
+    return o
+end
+
+function Kawateki:draw()
+    self.hitBox:draw()
+
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.rectangle("fill", self.xPos, self.yPos, self.w, self.h)
+
+end
+
+function Kawateki:tick(dt)
+    MovingThing.tick(self, dt)
+
+    if self.hitBox:collidesWith(player.hitBox) then
+
+        player:takeDamage(50)
+    end
+end
+
 -- /enemy insert
 
 math.randomseed(os.time())
@@ -745,7 +829,12 @@ function love.update(dt)
 
         tekitimeout = tekitimeout - dt
         if tekitimeout <= 0 then
-            enemy = Enemy:new(math.random(0, 500), 0)
+            typ = math.random(0,1)
+            if typ == 0 then
+                enemy = Enemy:new(math.random(0, 500), 0)
+            elseif typ == 1 then
+                enemy = Matsu:new(math.random(0, 500), math.random(0, 500))
+            end
             table.insert(entities, enemy)
             tekitimeout = 8
         end
