@@ -707,6 +707,7 @@ function love.keypressed(key, scancode)
     end
     if gamePhase == 0 and scancode == "space" then
         gamePhase = 1
+        music:setLooping(true)
         music:play()
     end
     if gamePhase == 1 then
