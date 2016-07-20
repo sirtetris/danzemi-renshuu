@@ -598,6 +598,7 @@ function love.load()
     images.mc_s = love.graphics.newImage('assets/mc_s.png')
     images.aim = love.graphics.newImage('assets/aim.png')
     images.grassblock = love.graphics.newImage('assets/grassblock.png')
+    music = love.audio.newSource("assets/mamimumemo.wav")
 end
 
 function love.draw()
@@ -706,6 +707,7 @@ function love.keypressed(key, scancode)
     end
     if gamePhase == 0 and scancode == "space" then
         gamePhase = 1
+        music:play()
     end
     if gamePhase == 1 then
         if scancode == "space" then
