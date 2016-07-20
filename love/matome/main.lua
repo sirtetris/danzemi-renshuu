@@ -786,7 +786,7 @@ function love.load()
     STDFONT_20 = love.graphics.newFont(20);
     JAFONT = love.graphics.newFont("assets/ipaexg.ttf", 20);
     JAFONT_60 = love.graphics.newFont("assets/ipaexg.ttf", 60);
-    love.window.setTitle("オブジェクト指向　テスト")
+    love.window.setTitle("Egg ◎　Catcher")
     love.window.setMode(SCREEN_W, SCREEN_H, {})
     love.graphics.setBackgroundColor(150, 150, 150)
     images.mc_w_r1 = love.graphics.newImage('assets/mc_w_r1.png')
@@ -816,7 +816,7 @@ function love.draw()
         love.graphics.draw(images.bg0, 0, 0)
         love.graphics.setColor(55, 55, 55)
         love.graphics.setFont(JAFONT_60);
-        love.graphics.print("ゲームタイトル", (SCREEN_W/2)-215, 275)
+        love.graphics.print("Egg ◎ Catcher", (SCREEN_W/2)-215, 275)
         love.graphics.rectangle("line", (SCREEN_W/2)-220, 265, 433, 70)
         love.graphics.setFont(JAFONT);
         love.graphics.print("→　スペースキーでゲーム開始　←", (SCREEN_W/2)-168, 350)
