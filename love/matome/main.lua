@@ -238,7 +238,7 @@ end
 
 function Block:draw()
     love.graphics.setColor(255, 255, 255)
-    for offset=0, self.len*15, 15 do
+    for offset=0, self.len*14, 15 do
         love.graphics.draw(images.grassblock, self.xPos + offset, self.yPos)
     end
     self.hitBox:draw()
@@ -523,6 +523,7 @@ function Enemy:new(xPos, yPos)
     local o = MovingThing:new(xPos, yPos, 60, 60, 3, 0.5, 25, false, false)
     setmetatable(o, {__index = Enemy})
     o.name = "Enemy"
+    o.attackTimeout = 0.5
     return o
 end
 
@@ -534,6 +535,16 @@ end
 
 function Enemy:tick(dt)
     MovingThing.tick(self, dt) -- :tick(dt) doesn't work. because reasons
+
+    sh = self.hitBox
+    ph = player.hitBox
+    if sh:collidesWithDelta(ph, 1, 0) or -- bad "touches" function hack
+       sh:collidesWithDelta(ph, -1, 0) or
+       sh:collidesWithDelta(ph, 0, 1) or
+       sh:collidesWithDelta(ph, 0, -1) then
+        self:attack(dt)
+    end
+
     if player.holding == nil then
         return
     end
@@ -545,6 +556,14 @@ function Enemy:tick(dt)
     end
     if player.yPos < self.yPos then
         self:jump()
+    end
+end
+
+function Enemy:attack(dt)
+    self.attackTimeout = self.attackTimeout - dt
+    if self.attackTimeout <= 0 then
+        player:takeDamage(2)
+        self.attackTimeout = 0.5
     end
 end
 
@@ -562,17 +581,16 @@ gamePhase = 0 -- 0=start, 1=game, 2=end
 countdown = 120
 score = 0
 eggtimeout = 2
+tekitimeout = 1
 viewscale = 1
 entities = {}
 images = {}
 player = Player:new(130, 80)
 table.insert(entities, player)
-enemy = Enemy:new(500, 300)
-table.insert(entities, enemy)
 
 indi = TextIndicator:new(0, 0)
 
-plattform1 = Block:new(0, 725, 400)
+plattform1 = Block:new(-1500, 725, 400)
 plattform2 = Block:new(10, 230, 15)
 plattform3 = Block:new(300, 500, 20)
 eggSpawn = TriggerArea:new(60, 220, 80, 10)
@@ -687,10 +705,10 @@ function love.update(dt)
         if love.keyboard.isDown("left") then
             player:accLeft()
         end
-        if love.keyboard.isDown("g") then
+        if love.keyboard.isDown("4") then
             player:pickUp()
         end
-        if love.keyboard.isDown("d") then
+        if love.keyboard.isDown("3") then
             player:drop()
         end
 
@@ -725,6 +743,13 @@ function love.update(dt)
             end
         end
 
+        tekitimeout = tekitimeout - dt
+        if tekitimeout <= 0 then
+            enemy = Enemy:new(math.random(0, 500), 0)
+            table.insert(entities, enemy)
+            tekitimeout = 8
+        end
+
         updatedEntities = {}
         for i, e in ipairs(entities) do
             if e.alive then
@@ -736,7 +761,7 @@ function love.update(dt)
 end
 
 function love.keypressed(key, scancode)
-    if scancode == "h" then
+    if scancode == "0" then
         debug = 1 - debug
     end
     if gamePhase == 0 and scancode == "space" then
@@ -746,7 +771,7 @@ function love.keypressed(key, scancode)
         if scancode == "space" then
             player:jump()
         end
-        if scancode == "f" then -- make player skill w/ timeout (e.g. only for 5s a time)
+        if scancode == "1" then -- maybe make player skill w/ timeout (e.g. only for 5s a time)
             viewscale = 0.5
         end
         if scancode == indi.button then
@@ -756,7 +781,7 @@ function love.keypressed(key, scancode)
 end
 
 function love.keyreleased(key, scancode)
-    if scancode == "f" then
+    if scancode == "1" then
         viewscale = 1
     end
 end
