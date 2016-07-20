@@ -923,7 +923,7 @@ function love.update(dt)
 
         tekitimeout = tekitimeout - dt
         if tekitimeout <= 0 then
-            typ = math.random(2,2)
+            typ = math.random(0,3)
             if typ == 0 then
                 enemy = Enemy:new(math.random(0, 500), 0)
             elseif typ == 1 then
