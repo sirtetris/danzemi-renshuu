@@ -537,10 +537,40 @@ elseif  self.time == 1 then
   
 end
 end
+Kawateki = {}
+setmetatable(Kawateki, {__index = MovingThing})
+
+function Kawateki:new(w,h,xPos, yPos)
+    local o = MovingThing:new(xPos, yPos, w, h, 5, 0.5, 30, true, true)
+    setmetatable(o, {__index = Kawateki})
+    o.time = 0
+    return o
+end
+
+function Kawateki:draw()
+    self.hitBox:draw()
+
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.rectangle("fill", self.xPos, self.yPos, self.w, self.h)
+
+end
+
+function Kawateki:tick(dt)
+    MovingThing.tick(self, dt)
+
+    if self.hitBox:collidesWith(player.hitBox) then
+
+        player:takeDamage(50)
+    end
+end
+
+
 -- ### globals
 debug = 0
 bos = Boss:new(500,150,40)
 entities = {}
+kawateki=Kawateki:new(20,15,250,300)
+table.insert(entities, kawateki)
 
 table.insert(entities, bos)
 
