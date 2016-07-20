@@ -63,8 +63,9 @@ end
 function TextIndicator:tick()
     if not self.active then return end
     if self.count <= 0 then
-        self.owner:die()
         self:deactivate()
+        indi:reset()
+        self.owner:die()
     end
     self:follow()
     self:wiggle()
