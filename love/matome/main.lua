@@ -442,6 +442,7 @@ end
 
 function Player:takeDamage(dmg)
     self.hp = self.hp - dmg
+    sfxKick:play()
 end
 
 function Player:pickUp()
@@ -764,11 +765,15 @@ indi = TextIndicator:new(0, 0)
 plattform1 = Block:new(-1500, 725, 400)
 plattform2 = Block:new(10, 230, 15)
 plattform3 = Block:new(300, 500, 20)
+plattform4 = Block:new(-180, 0, 2)
+plattform5 = Block:new(10, -280, 40)
 eggSpawn = TriggerArea:new(60, 220, 80, 10)
 eggGoal = TriggerArea:new(600, 715, 180, 10)
 table.insert(entities, plattform1)
 table.insert(entities, plattform2)
 table.insert(entities, plattform3)
+table.insert(entities, plattform4)
+table.insert(entities, plattform5)
 table.insert(entities, eggSpawn)
 table.insert(entities, eggGoal)
 -- ### /globals
@@ -800,6 +805,8 @@ function love.load()
     images.grassblock = love.graphics.newImage('assets/grassblock.png')
     music0 = love.audio.newSource("assets/start.wav")
     music1 = love.audio.newSource("assets/mamimumemo.wav")
+    music2 = love.audio.newSource("assets/owari.wav")
+    sfxKick = love.audio.newSource("assets/kick1.mp3", "static")
 end
 
 function love.draw()
@@ -916,13 +923,13 @@ function love.update(dt)
 
         tekitimeout = tekitimeout - dt
         if tekitimeout <= 0 then
-            typ = math.random(0,3)
+            typ = math.random(2,2)
             if typ == 0 then
                 enemy = Enemy:new(math.random(0, 500), 0)
             elseif typ == 1 then
                 enemy = Matsu:new(math.random(0, 500), math.random(0, 500))
             elseif typ == 2 then
-                enemy = Boss:new(math.random(-300, 800), math.random(-300, 300))
+                enemy = Boss:new(math.random(-300, 800), math.random(-700, -100))
             elseif typ == 3 then
                 enemy = Kawateki:new(math.random(0, 500), math.random(0, 500))
             end
@@ -937,6 +944,13 @@ function love.update(dt)
             end
         end
         entities = updatedEntities
+    end
+    if gamePhase == 2 then
+        if not music2:isPlaying() then
+            music1:stop()
+            music2:setLooping(false)
+            music2:play()
+        end
     end
 end
 
