@@ -169,6 +169,10 @@ function Entity:new(xPos, yPos, w, h, noClip, playerNoClip)
     return o
 end
 
+function Entity:die()
+    self.alive = false
+end
+
 function Entity:findNearest(limit, class)
     selfCenter = self.hitBox:getCenter()
     nearest = nil
@@ -560,10 +564,6 @@ function Enemy:attack(dt)
     end
 end
 
-function Enemy:die()
-    self.alive = false
-end
-
 -- - - -
 
 Matsu = {}
@@ -576,7 +576,6 @@ function Matsu:new(xPos, yPos)
     o.xOrigin = xPos
     o.name = "Enemy"
     o.attackTimeout = 0.5
-    o.alive = true
     return o
 end
 
@@ -622,36 +621,124 @@ function Matsu:attack(dt)
     end
 end
 
-function Matsu:die()
-    self.alive = false
-end
-
 -- - - -
 
 Kawateki = {}
 setmetatable(Kawateki, {__index = MovingThing})
 
-function Kawateki:new(w,h,xPos, yPos)
-    local o = MovingThing:new(xPos, yPos, w, h, 5, 0.5, 30, true, true)
+function Kawateki:new(xPos, yPos)
+    local o = MovingThing:new(xPos, yPos, 15, 15, 5, 0.5, 30, true, true)
     setmetatable(o, {__index = Kawateki})
     o.time = 0
+    o.attackTimeout = 3
+    o.name = "Enemy"
     return o
 end
 
 function Kawateki:draw()
     self.hitBox:draw()
 
-    love.graphics.setColor(255, 255, 255)
+    love.graphics.setColor(5, 5, 5)
     love.graphics.rectangle("fill", self.xPos, self.yPos, self.w, self.h)
-
 end
 
 function Kawateki:tick(dt)
     MovingThing.tick(self, dt)
-
     if self.hitBox:collidesWith(player.hitBox) then
+        self:attack(dt)
+    end
+end
 
-        player:takeDamage(50)
+function Kawateki:attack(dt)
+    self.attackTimeout = self.attackTimeout - dt
+    if self.attackTimeout <= 0 then
+        player:takeDamage(10)
+        self.attackTimeout = 3
+    end
+end
+
+-- - - -
+
+Boss = {}
+setmetatable(Boss, {__index = Entity})
+
+function Boss:new(xPos, yPos)
+    local o = Entity:new(xPos, yPos, 50, 50, true, false)
+    setmetatable(o, {__index = Boss})
+    o.pi = 50
+    o.dtSum = 9
+    o.name = "Enemy"
+
+    return o
+end
+function Boss:draw()
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.circle("fill", self.xPos, self.yPos, self.pi, 100)
+    self.hitBox:draw()
+end
+function Boss:tick(dt)
+    Entity.tick(self, dt)
+     self.dtSum = self.dtSum + dt
+
+    if self.dtSum >= 10 then
+        table.insert(entities, Teki:new(self.xPos,self.yPos,10))
+        self.dtSum = 0
+    end
+end
+
+Teki = {}
+setmetatable(Teki, {__index = MovingThing})
+
+function Teki:new(xPos, yPos,aSize)
+    local o = MovingThing:new(xPos, yPos, aSize, aSize, 5, 0.5, 30, true, true)
+    setmetatable(o, {__index = Teki})
+    o.pi = aSize
+    o.name = "Enemy"
+    o.attackTimeout = 0.3
+    return o
+end
+
+function Teki:draw()
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.circle("fill", self.xPos, self.yPos, self.pi, 100)
+    self.hitBox:draw()
+end
+
+function Teki:tick(dt)
+    MovingThing.tick(self, dt)
+    if self.hitBox:collidesWith(player.hitBox) then
+        self:attack(dt)
+    end
+
+    if self.yPos - player.yPos <=0 then
+        self:accDown()
+    else
+        self:accUp()
+    end
+
+    if self.xPos - player.xPos <=0 then
+        self:tekiRight()
+    else
+        self:tekiLeft()
+    end
+end
+
+function Teki:attack(dt)
+    self.attackTimeout = self.attackTimeout - dt
+    if self.attackTimeout <= 0 then
+        player:takeDamage(1)
+        self.attackTimeout = 0.3
+    end
+end
+
+function Teki:tekiRight()
+    if math.abs(self.xSpeed) <= self.maxSpeed then
+        self.xSpeed = self.xSpeed + 0.5
+    end
+end
+function Teki:tekiLeft()
+    if math.abs(self.xSpeed) <= self.maxSpeed then
+        self.xSpeed = self.xSpeed - 0.5
     end
 end
 
@@ -829,11 +916,15 @@ function love.update(dt)
 
         tekitimeout = tekitimeout - dt
         if tekitimeout <= 0 then
-            typ = math.random(0,1)
+            typ = math.random(0,3)
             if typ == 0 then
                 enemy = Enemy:new(math.random(0, 500), 0)
             elseif typ == 1 then
                 enemy = Matsu:new(math.random(0, 500), math.random(0, 500))
+            elseif typ == 2 then
+                enemy = Boss:new(math.random(-300, 800), math.random(-300, 300))
+            elseif typ == 3 then
+                enemy = Kawateki:new(math.random(0, 500), math.random(0, 500))
             end
             table.insert(entities, enemy)
             tekitimeout = 8
