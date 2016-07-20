@@ -25,8 +25,8 @@ function TextIndicator:new(xPos, yPos)
     o.xOrigin = xPos
     o.yOrigin = yPos
     o.owner = nil
-    o.button = nil
-    o.count = nil
+    o.button = "ä"
+    o.count = 999
     o.active = false
     return o
 end
@@ -54,22 +54,25 @@ function TextIndicator:draw()
     end
 end
 
-function TextIndicator:setOwner(o)
+function TextIndicator:activate(o)
     self.owner = o
+    self.active = true
 end
 
-function TextIndicator:activate()
+function TextIndicator:reset()
     self.button = string.char(math.random(97, 122))
     self.count = math.random(2, 5)
-    self.active = true
 end
 
 function TextIndicator:deactivate()
     self.active = false
+    self.owner = nil
 end
 
 function TextIndicator:tick()
+    if not self.active then return end
     if self.count <= 0 then
+        self.owner:die()
         self:deactivate()
     end
     self:follow()
@@ -171,6 +174,7 @@ function Entity:new(xPos, yPos, w, h, noClip, playerNoClip)
     o.maxSpeed = 5
     o.jumpLock = 0
     o.hitBox = HitBox:new(xPos, yPos, w, h, noClip, playerNoClip)
+    o.alive = true
     return o
 end
 
@@ -476,6 +480,11 @@ function Player:tick(dt)
 
     -- targeting enemies
     self.target = player:findNearest(350, "Enemy")
+    if self.target ~= nil then
+        indi:activate(self.target)
+    else
+        indi:deactivate()
+    end
 
     -- animation
     self.animationDtSum = self.animationDtSum + dt
@@ -514,7 +523,6 @@ setmetatable(Enemy,{__index = MovingThing})
 function Enemy:new(xPos, yPos)
     local o = MovingThing:new(xPos, yPos, 60, 60, 3, 0.5, 25, false, false)
     setmetatable(o, {__index = Enemy})
-    o.alive = true
     o.name = "Enemy"
     return o
 end
@@ -540,6 +548,11 @@ function Enemy:tick(dt)
         self:jump()
     end
 end
+
+function Enemy:die()
+    self.alive = false
+end
+
 -- /enemy insert
 
 math.randomseed(os.time())
@@ -558,9 +571,7 @@ table.insert(entities, player)
 enemy = Enemy:new(500, 300)
 table.insert(entities, enemy)
 
-test = TextIndicator:new(0, 0)
-test:setOwner(enemy)
-test:activate()
+indi = TextIndicator:new(0, 0)
 
 plattform1 = Block:new(0, 725, 400)
 plattform2 = Block:new(10, 230, 15)
@@ -594,16 +605,20 @@ function love.load()
     images.mc_w_l3 = love.graphics.newImage('assets/mc_w_l3.png')
     images.mc_w_l4 = love.graphics.newImage('assets/mc_w_l4.png')
     images.mc_w_l5 = love.graphics.newImage('assets/mc_w_l5.png')
-    images.bg = love.graphics.newImage('assets/bg.jpg')
+    images.bg0 = love.graphics.newImage('assets/bg0.jpg')
+    images.bg1 = love.graphics.newImage('assets/bg1.jpg')
     images.mc_s = love.graphics.newImage('assets/mc_s.png')
     images.aim = love.graphics.newImage('assets/aim.png')
     images.grassblock = love.graphics.newImage('assets/grassblock.png')
-    music = love.audio.newSource("assets/mamimumemo.wav")
+    music0 = love.audio.newSource("assets/start.wav")
+    music1 = love.audio.newSource("assets/mamimumemo.wav")
 end
 
 function love.draw()
     if gamePhase == 0 then
         love.graphics.setColor(255, 255, 255)
+        love.graphics.draw(images.bg0, 0, 0)
+        love.graphics.setColor(55, 55, 55)
         love.graphics.setFont(JAFONT_60);
         love.graphics.print("ゲームタイトル", (SCREEN_W/2)-215, 275)
         love.graphics.rectangle("line", (SCREEN_W/2)-220, 265, 433, 70)
@@ -614,7 +629,7 @@ function love.draw()
 
     if gamePhase == 1 then
         love.graphics.setColor(255, 255, 255)
-        love.graphics.draw(images.bg, 0, 0)
+        love.graphics.draw(images.bg1, 0, 0)
         love.graphics.print("Position: (" .. player.xPos .. "|" .. player.yPos .. ").", 20, 20)
         love.graphics.print("debug: " .. debugMsg, 20, 40)
         love.graphics.setFont(STDFONT_20);
@@ -640,7 +655,7 @@ function love.draw()
             love.graphics.draw(images.aim, tc.x-17, tc.y-17)
         end
 
-        test:draw()
+        indi:draw()
     end
 
     if gamePhase == 2 then
@@ -654,7 +669,19 @@ function love.draw()
 end
 
 function love.update(dt)
+    if gamePhase == 0 then
+        if not music0:isPlaying() then
+            music0:setLooping(true)
+            music0:play()
+        end
+    end
     if gamePhase == 1 then
+        if not music1:isPlaying() then
+            music0:stop()
+            music1:setLooping(true)
+            music1:play()
+        end
+
         if love.keyboard.isDown("right") then
             player:accRight()
         end
@@ -688,7 +715,7 @@ function love.update(dt)
         end
         --debugMsg = "s: " .. startEggs .. " | g: " .. goalEggs
 
-        test:tick()
+        indi:tick()
 
         score = goalEggs
         if startEggs == 0 then
@@ -698,6 +725,14 @@ function love.update(dt)
                 eggtimeout = 2
             end
         end
+
+        updatedEntities = {}
+        for i, e in ipairs(entities) do
+            if e.alive then
+                table.insert(updatedEntities, e)
+            end
+        end
+        entities = updatedEntities
     end
 end
 
@@ -707,8 +742,6 @@ function love.keypressed(key, scancode)
     end
     if gamePhase == 0 and scancode == "space" then
         gamePhase = 1
-        music:setLooping(true)
-        music:play()
     end
     if gamePhase == 1 then
         if scancode == "space" then
@@ -717,8 +750,8 @@ function love.keypressed(key, scancode)
         if scancode == "f" then -- make player skill w/ timeout (e.g. only for 5s a time)
             viewscale = 0.5
         end
-        if scancode == test.button then
-            test.count = test.count - 1
+        if scancode == indi.button then
+            indi.count = indi.count - 1
         end
     end
 end
