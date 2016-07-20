@@ -467,6 +467,7 @@ end
 
 function Player:die()
     gamePhase = 2
+    ending = 2
 end
 
 function Player:tick(dt)
@@ -752,6 +753,7 @@ debug = 0
 debugMsg = ""
 gamePhase = 0 -- 0=start, 1=game, 2=end
 countdown = 120
+ending = 0
 score = 0
 eggtimeout = 2
 tekitimeout = 1
@@ -801,12 +803,14 @@ function love.load()
     images.mc_w_l5 = love.graphics.newImage('assets/mc_w_l5.png')
     images.bg0 = love.graphics.newImage('assets/bg0.jpg')
     images.bg1 = love.graphics.newImage('assets/bg1.jpg')
+    images.bg2 = love.graphics.newImage('assets/bg2.jpg')
     images.mc_s = love.graphics.newImage('assets/mc_s.png')
     images.aim = love.graphics.newImage('assets/aim.png')
     images.grassblock = love.graphics.newImage('assets/grassblock.png')
     music0 = love.audio.newSource("assets/start.wav")
     music1 = love.audio.newSource("assets/mamimumemo.wav")
     music2 = love.audio.newSource("assets/owari.wav")
+    music3 = love.audio.newSource("assets/kakikukeko.wav")
     sfxKick = love.audio.newSource("assets/kick1.mp3", "static")
 end
 
@@ -856,6 +860,8 @@ function love.draw()
 
     if gamePhase == 2 then
         love.graphics.setColor(255, 255, 255)
+        love.graphics.draw(images.bg2, 0, 0)
+        love.graphics.setColor(20, 20, 20)
         love.graphics.setFont(JAFONT_60);
         love.graphics.print("ゲームオーバー", (SCREEN_W/2)-215, 275)
         love.graphics.setFont(STDFONT_20);
@@ -894,6 +900,7 @@ function love.update(dt)
         countdown = countdown - dt
         if countdown <= 0.5 then
             gamePhase = 2
+            ending = 1
         end
 
         startEggs = 0
@@ -947,10 +954,19 @@ function love.update(dt)
         entities = updatedEntities
     end
     if gamePhase == 2 then
-        if not music2:isPlaying() then
-            music1:stop()
-            music2:setLooping(false)
-            music2:play()
+        if ending == 1 then
+            if not music2:isPlaying() then
+                music1:stop()
+                music2:setLooping(false)
+                music2:play()
+            end
+        end
+        if ending == 2 then
+            if not music3:isPlaying() then
+                music1:stop()
+                music3:setLooping(false)
+                music3:play()
+            end
         end
     end
 end
