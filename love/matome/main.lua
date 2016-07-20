@@ -1,3 +1,10 @@
+-- TODO notes:
+-- 1 TextIndicator class (wabbling over enemy/crosshair)
+--      if active and right keys pressed mark 'owning' enemy dead
+--      -> dead entity garbage collection routine
+-- spawning of enemies
+--      smhw over plattforms
+
 -- constants
 JAFONT = nil
 JAFONT_60 = nil
@@ -6,6 +13,68 @@ STDFONT_20 = nil
 SCREEN_W = 1000
 SCREEN_H = 730
 -- /constants
+
+TextIndicator = {} -- treat as Singleton (?)
+
+function TextIndicator:new(xPos, yPos)
+    local o = {}
+    setmetatable(o, {__index = TextIndicator})
+    o.name = "TextIndicator"
+    o.xPos = xPos
+    o.yPos = yPos
+    o.xOrigin = xPos
+    o.yOrigin = yPos
+    o.owner = nil
+    o.button = nil
+    o.count = nil
+    o.active = false
+    return o
+end
+
+function TextIndicator:wiggle()
+    dx = math.random(-4, 4)
+    dy = math.random(-4, 4)
+    self.xPos = self.xOrigin + dx
+    self.yPos = self.yOrigin + dy
+end
+
+function TextIndicator:follow()
+    oc = self.owner.hitBox:getCenter()
+    --debugMsg = oc.x .. " | " .. oc.y
+    self.xOrigin = oc.x - 26
+    self.yOrigin = oc.y - 50
+end
+
+function TextIndicator:draw()
+    if self.active then
+        love.graphics.setColor(255, 5, 5)
+        love.graphics.setFont(STDFONT_20);
+        love.graphics.print(self.button .. " x " .. self.count, self.xPos, self.yPos)
+        love.graphics.setFont(STDFONT);
+    end
+end
+
+function TextIndicator:setOwner(o)
+    self.owner = o
+end
+
+function TextIndicator:activate()
+    self.button = string.char(math.random(97, 122))
+    self.count = math.random(2, 5)
+    self.active = true
+end
+
+function TextIndicator:deactivate()
+    self.active = false
+end
+
+function TextIndicator:tick()
+    if self.count <= 0 then
+        self:deactivate()
+    end
+    self:follow()
+    self:wiggle()
+end
 
 HitBox = {}
 
@@ -473,6 +542,7 @@ function Enemy:tick(dt)
 end
 -- /enemy insert
 
+math.randomseed(os.time())
 -- ### globals
 debug = 0
 debugMsg = ""
@@ -487,6 +557,11 @@ player = Player:new(130, 80)
 table.insert(entities, player)
 enemy = Enemy:new(500, 300)
 table.insert(entities, enemy)
+
+test = TextIndicator:new(0, 0)
+test:setOwner(enemy)
+test:activate()
+
 plattform1 = Block:new(0, 725, 400)
 plattform2 = Block:new(10, 230, 15)
 plattform3 = Block:new(300, 500, 20)
@@ -543,8 +618,9 @@ function love.draw()
         love.graphics.print("debug: " .. debugMsg, 20, 40)
         love.graphics.setFont(STDFONT_20);
         love.graphics.setColor(20, 20, 20)
-        love.graphics.print("TIME: " .. math.floor(countdown + 0.5), SCREEN_W-120, 20)
-        love.graphics.print("SCORE: " .. score, SCREEN_W-120, 50)
+        love.graphics.print("TIME: " .. math.floor(countdown + 0.5), SCREEN_W-130, 20)
+        love.graphics.print("SCORE: " .. score, SCREEN_W-130, 50)
+        love.graphics.print("HP: " .. player.hp, SCREEN_W-130, 80)
         love.graphics.setFont(STDFONT);
         love.graphics.setColor(255, 255, 255)
         --
@@ -562,6 +638,8 @@ function love.draw()
             tc = player.target.hitBox:getCenter()
             love.graphics.draw(images.aim, tc.x-17, tc.y-17)
         end
+
+        test:draw()
     end
 
     if gamePhase == 2 then
@@ -609,6 +687,8 @@ function love.update(dt)
         end
         --debugMsg = "s: " .. startEggs .. " | g: " .. goalEggs
 
+        test:tick()
+
         score = goalEggs
         if startEggs == 0 then
             eggtimeout = eggtimeout - dt
@@ -621,17 +701,22 @@ function love.update(dt)
 end
 
 function love.keypressed(key, scancode)
-    if gamePhase == 0 and scancode == "space" then
-        gamePhase = 1
-    end
-    if gamePhase == 1 and scancode == "space" then
-        player:jump()
-    end
     if scancode == "h" then
         debug = 1 - debug
     end
-    if scancode == "f" then -- make player skill w/ timeout (e.g. only for 5s a time)
-        viewscale = 0.5
+    if gamePhase == 0 and scancode == "space" then
+        gamePhase = 1
+    end
+    if gamePhase == 1 then
+        if scancode == "space" then
+            player:jump()
+        end
+        if scancode == "f" then -- make player skill w/ timeout (e.g. only for 5s a time)
+            viewscale = 0.5
+        end
+        if scancode == test.button then
+            test.count = test.count - 1
+        end
     end
 end
 
