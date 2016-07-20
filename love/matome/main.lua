@@ -959,6 +959,7 @@ function love.update(dt)
                 music1:stop()
                 music2:setLooping(false)
                 music2:play()
+                ending = 0
             end
         end
         if ending == 2 then
@@ -966,6 +967,7 @@ function love.update(dt)
                 music1:stop()
                 music3:setLooping(false)
                 music3:play()
+                ending = 0
             end
         end
     end
